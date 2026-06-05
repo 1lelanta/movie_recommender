@@ -1,0 +1,390 @@
+"""
+PROJECT SUMMARY: Movie Recommendation System
+==============================================
+
+This document provides a complete overview of the movie recommendation system
+project structure, implementation details, and architecture.
+
+FILE STRUCTURE
+==============
+
+movie_recommender/
+│
+├── main.py                          # Entry point - runs the CLI
+├── README.md                        # Comprehensive project documentation
+├── requirements.txt                 # Python dependencies
+│
+├── data/
+│   └── raw/                         # Raw data directory
+│       ├── movies.csv               # Movie metadata (movieId, title, genres)
+│       └── ratings.csv              # User ratings (userId, movieId, rating, timestamp)
+│
+└── movie_recommender/               # Python package
+    ├── __init__.py                  # Package initialization & exports
+    ├── recommender.py               # Core MovieRecommender class (~400 lines)
+    └── cli.py                       # Command-line interface (~250 lines)
+
+
+CORE COMPONENTS
+===============
+
+1. MovieRecommender Class (recommender.py)
+   ========================================
+   
+   Purpose: Core recommendation engine using content-based filtering
+   
+   Key Methods:
+   - __init__(movies_path, ratings_path)
+     Initialize with CSV files, validate data, compute similarity matrix
+   
+   - _load_data(movies_path, ratings_path)
+     Load and validate CSV files
+   
+   - _preprocess_data()
+     Handle missing values, remove duplicates, clean data
+   
+   - _compute_similarity_matrix()
+     Apply TF-IDF vectorization and compute cosine similarity
+   
+   - recommend_movies(movie_title, top_n=10)
+     Main recommendation function - returns top N similar movies
+   
+   - get_movie_info(movie_title)
+     Retrieve movie metadata
+   
+   - search_movies(query)
+     Search by partial title match
+   
+   - display_recommendations(recommendations, reference_movie)
+     Static method for formatted output
+
+
+2. CLI Interface (cli.py)
+   =======================
+   
+   Purpose: Interactive command-line interface for users
+   
+   Functions:
+   - main()
+     Main menu loop with 4 options
+   
+   - get_recommendations(recommender)
+     Get and display recommendations
+   
+   - search_movie(recommender)
+     Search for movies
+   
+   - get_movie_info(recommender)
+     Display movie information
+
+
+3. Package Init (__init__.py)
+   ==========================
+   
+   Purpose: Package-level imports and exports
+   
+   Exports:
+   - MovieRecommender class
+   - Version info
+   - Author attribution
+
+
+ALGORITHM EXPLANATION
+=====================
+
+The system uses Content-Based Filtering with TF-IDF + Cosine Similarity:
+
+Step 1: Data Loading
+   - Load movies.csv: movieId, title, genres
+   - Load ratings.csv: userId, movieId, rating, timestamp
+   - Validate file existence and required columns
+
+Step 2: Data Preprocessing
+   - Fill missing genres with "Unknown"
+   - Remove duplicate movies (keep first)
+   - Remove movies with missing titles
+   - Reset DataFrame index
+
+Step 3: Feature Extraction (TF-IDF)
+   - Convert genre strings into numerical vectors
+   - Parameters:
+     * analyzer='char': Character-level features
+     * ngram_range=(1,2): Unigrams and bigrams
+     * min_df=1: Min document frequency
+     * max_features=100: Vocabulary size limit
+   
+   Example: "Action|Sci-Fi|Thriller" → TF-IDF vector
+
+Step 4: Similarity Computation
+   - Compute cosine similarity matrix (N×N)
+   - Formula: similarity = (A·B) / (||A|| × ||B||)
+   - Results range from 0 (no similarity) to 1 (identical)
+
+Step 5: Recommendation Generation
+   1. Find movie index by title (case-insensitive)
+   2. Get similarity scores from matrix[index]
+   3. Sort by similarity descending
+   4. Exclude the query movie itself
+   5. Return top N with scores
+
+Step 6: Error Handling
+   - Catch FileNotFoundError with clear messages
+   - Catch ValueError for missing columns
+   - Provide search suggestions if movie not found
+   - Validate user input at all levels
+
+
+KEY DESIGN DECISIONS
+====================
+
+1. Object-Oriented Design
+   - Encapsulation in MovieRecommender class
+   - Private methods with _ prefix for internal logic
+   - Public methods for external interface
+
+2. Error Handling
+   - Comprehensive exception catching
+   - User-friendly error messages
+   - Helpful suggestions (search alternatives)
+   - Input validation before processing
+
+3. Type Hints
+   - Full Python type annotations
+   - Improves code readability and IDE support
+   - Enables static type checking
+
+4. Documentation
+   - Module-level docstrings
+   - Comprehensive class/method docstrings
+   - Inline comments for complex logic
+   - README with examples and troubleshooting
+
+5. Performance
+   - Vectorized operations (NumPy)
+   - Sparse matrix for TF-IDF (memory efficient)
+   - Pre-computed similarity matrix (fast lookups)
+
+6. Data Validation
+   - Check file existence before loading
+   - Validate required columns present
+   - Explicit missing value handling
+   - Duplicate detection and removal
+
+
+CODE QUALITY METRICS
+====================
+
+Lines of Code:
+- recommender.py: ~400 lines (well-documented)
+- cli.py: ~250 lines
+- __init__.py: ~10 lines
+- Total: ~660 lines
+
+Documentation:
+- Module docstrings: 3/3 (100%)
+- Class docstrings: 1/1 (100%)
+- Method docstrings: 13/13 (100%)
+- Type hints: Complete
+- Comments: Strategic placement for clarity
+
+Error Handling:
+- FileNotFoundError handling
+- ValueError handling
+- User input validation
+- Graceful degradation with suggestions
+
+
+DEPENDENCIES
+============
+
+Core Libraries:
+- pandas (>=2.0.0)      # Data loading and manipulation
+- numpy (>=1.24.0)      # Numerical operations
+- scikit-learn (>=1.4.0) # TF-IDF and cosine similarity
+
+Optional:
+- pytest (>=7.0)        # Testing
+- black (>=23.0)        # Code formatting
+- flake8 (>=6.0)        # Linting
+
+
+USAGE EXAMPLES
+==============
+
+Example 1: Get Recommendations
+```python
+from movie_recommender import MovieRecommender
+
+recommender = MovieRecommender('data/raw/movies.csv', 'data/raw/ratings.csv')
+recommendations = recommender.recommend_movies('Inception', top_n=5)
+recommender.display_recommendations(recommendations, 'Inception')
+```
+
+Example 2: Search and Info
+```python
+matches = recommender.search_movies('Matrix')
+info = recommender.get_movie_info('The Matrix (1999)')
+print(f"Title: {info['title']}, Genres: {info['genres']}")
+```
+
+Example 3: Command Line
+```bash
+python main.py
+# Then interact with menu
+```
+
+
+DATASET REQUIREMENTS
+====================
+
+MovieLens CSV Format:
+
+movies.csv:
+- Column 1: movieId (integer)
+- Column 2: title (string)
+- Column 3: genres (pipe-separated string)
+
+Example:
+movieId,title,genres
+1,Toy Story (1995),Adventure|Animation|Children|Comedy|Fantasy
+2,Jumanji (1995),Adventure|Children|Fantasy
+
+ratings.csv:
+- Column 1: userId (integer)
+- Column 2: movieId (integer)
+- Column 3: rating (float, 0.5-5.0)
+- Column 4: timestamp (unix epoch)
+
+Download from: https://grouplens.org/datasets/movielens/
+
+
+COMPUTATIONAL COMPLEXITY
+========================
+
+Time Complexity:
+- Data loading: O(n) where n = number of records
+- TF-IDF vectorization: O(n*m) where m = vocabulary size
+- Similarity computation: O(n²) for full matrix
+- Recommendation lookup: O(n log n) for sorting
+
+Space Complexity:
+- Data storage: O(n)
+- TF-IDF matrix: O(n*m) sparse
+- Similarity matrix: O(n²) dense
+
+Note: For large datasets, consider approximate nearest neighbors
+
+
+EXTENSION IDEAS
+===============
+
+1. Collaborative Filtering
+   - User-based recommendations
+   - Item-based filtering
+   - Matrix factorization (SVD, NMF)
+
+2. Hybrid Approach
+   - Combine content-based + collaborative
+   - Weight multiple strategies
+   - Ensemble methods
+
+3. Enhanced Features
+   - Director/actor similarity
+   - Release year weighting
+   - IMDB ratings integration
+   - User rating statistics
+
+4. Web Interface
+   - Flask/Django backend
+   - React frontend
+   - Real-time recommendations
+
+5. Database Integration
+   - Store precomputed similarities
+   - Cache recommendations
+   - Track user preferences
+
+6. Advanced ML
+   - Deep learning embeddings
+   - NLP for plot summaries
+   - Approximate nearest neighbors (faiss)
+
+
+TESTING CONSIDERATIONS
+======================
+
+Unit Tests:
+- Test movie not found error handling
+- Test data preprocessing (missing values)
+- Test similarity computation correctness
+- Test recommendation ordering
+
+Integration Tests:
+- Full pipeline with sample data
+- CLI menu navigation
+- Error messages display
+
+Performance Tests:
+- Benchmark TF-IDF vectorization
+- Similarity matrix computation time
+- Recommendation lookup speed
+
+
+DEPLOYMENT CHECKLIST
+====================
+
+Before production:
+☐ Validate with full MovieLens dataset
+☐ Benchmark performance metrics
+☐ Test error handling with edge cases
+☐ Add logging for debugging
+☐ Create unit tests
+☐ Add type checking (mypy)
+☐ Code linting (flake8)
+☐ Code formatting (black)
+☐ Documentation complete
+☐ README with setup instructions
+☐ License information added
+
+
+FUTURE IMPROVEMENTS
+===================
+
+Short Term:
+- Add logging capability
+- Unit test coverage
+- Performance benchmarks
+- Code linting integration
+
+Medium Term:
+- Web API (Flask)
+- Database integration
+- Caching layer
+- Approximate nearest neighbors
+
+Long Term:
+- Distributed processing (Spark)
+- Real-time user feedback
+- A/B testing framework
+- Advanced ML algorithms
+
+
+CONTACT & ATTRIBUTION
+======================
+
+Project Type: Educational Portfolio Project
+Demonstrates:
+- Machine Learning fundamentals
+- Python best practices
+- OOP design principles
+- Data processing and analysis
+- CLI development
+- Documentation excellence
+
+Created: 2026
+Dataset: MovieLens (GroupLens Research)
+Framework: Scikit-learn, Pandas
+
+
+END OF PROJECT SUMMARY
+"""
