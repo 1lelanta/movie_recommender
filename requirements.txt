@@ -1,2 +1,9 @@
-pandas>=2.0
-scikit-learn>=1.4
+# Core Dependencies
+pandas>=2.0.0          # Data manipulation and analysis
+numpy>=1.24.0          # Numerical computing
+scikit-learn>=1.4.0    # Machine learning library (TF-IDF, cosine similarity)
+
+# Development and Optional
+pytest>=7.0            # Testing framework (optional)
+black>=23.0            # Code formatting (optional)
+flake8>=6.0            # Linting (optional)
