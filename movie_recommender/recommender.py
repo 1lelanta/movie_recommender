@@ -23,25 +23,40 @@ from typing import List, Tuple, Optional, Dict
 
 
 class MovieRecommender:
-    """Content-based recommender that uses movie genres as the feature space."""
+    """
+    A content-based movie recommendation system using TF-IDF vectorization and cosine similarity.
 
-    def __init__(self, data_dir: Optional[Path | str] = None) -> None:
-        """Initialize the recommender with the directory containing MovieLens CSVs.
+    This class loads movie metadata and ratings, preprocesses the data, and provides
+    recommendations based on genre similarity using TF-IDF vectorization.
+
+    Attributes:
+        movies_df (pd.DataFrame): DataFrame containing movie data.
+        ratings_df (pd.DataFrame): DataFrame containing rating data.
+        tfidf_matrix (sparse matrix): TF-IDF vectorized genres.
+        similarity_matrix (np.ndarray): Cosine similarity matrix between movies.
+    """
+
+    def __init__(self, movies_path: str, ratings_path: str) -> None:
+        """
+        Initialize the MovieRecommender with movie and rating data.
 
         Args:
-            data_dir: Directory containing movies.csv and ratings.csv.
-                If omitted, defaults to data/raw relative to the project root.
+            movies_path (str): Path to the movies.csv file.
+            ratings_path (str): Path to the ratings.csv file.
+
+        Raises:
+            FileNotFoundError: If either CSV file is not found.
+            ValueError: If required columns are missing from the CSV files.
         """
-
-        project_root = Path(__file__).resolve().parents[1]
-        default_data_dir = project_root / "data" / "raw"
-        self.data_dir = Path(data_dir).expanduser().resolve() if data_dir else default_data_dir
-
-        self.movies: pd.DataFrame | None = None
-        self.ratings: pd.DataFrame | None = None
-        self.movie_features: pd.DataFrame | None = None
+        self.movies_df = None
+        self.ratings_df = None
+        self.tfidf_matrix = None
         self.similarity_matrix = None
-        self.vectorizer: TfidfVectorizer | None = None
+
+        # Load and preprocess data
+        self._load_data(movies_path, ratings_path)
+        self._preprocess_data()
+        self._compute_similarity_matrix()
 
     def load_data(self) -> None:
         """Load movies.csv and ratings.csv, then clean and standardize the data."""
