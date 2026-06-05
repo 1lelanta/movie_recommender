@@ -1,33 +1,25 @@
-"""Content-based movie recommender built on top of MovieLens data.
+"""
+Movie Recommendation Engine using Content-Based Filtering.
 
-The implementation intentionally keeps the pipeline explicit and readable so it
-works well as a portfolio project:
-- load and clean MovieLens CSV files with pandas
-- build a TF-IDF representation from movie genres
-- compute cosine similarity between movies
-- expose a simple recommendation API and CLI entry point
+This module implements a content-based recommendation system using TF-IDF vectorization
+and cosine similarity on movie genres. It loads movie metadata and provides recommendations
+based on genre similarity.
+
+Classes:
+    MovieRecommender: Main class for movie recommendations.
+
+Example:
+    >>> recommender = MovieRecommender('data/raw/movies.csv', 'data/raw/ratings.csv')
+    >>> recommendations = recommender.recommend_movies('The Matrix', top_n=10)
+    >>> recommender.display_recommendations(recommendations)
 """
 
-from __future__ import annotations
-
-from dataclasses import dataclass
-from difflib import get_close_matches
-from pathlib import Path
-from typing import Optional
-
+import os
 import pandas as pd
+import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-
-
-@dataclass(frozen=True)
-class Recommendation:
-    """Container for a single recommendation result."""
-
-    title: str
-    genres: str
-    similarity_score: float
-    average_rating: Optional[float] = None
+from typing import List, Tuple, Optional, Dict
     rating_count: Optional[int] = None
 
 
