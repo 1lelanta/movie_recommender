@@ -5,8 +5,10 @@ This module provides an interactive CLI for users to get movie recommendations
 through the terminal.
 """
 
-from movie_recommender.recommender import MovieRecommender
-from typing import Optional
+from pathlib import Path
+
+from .bootstrap import ensure_movielens_data
+from .recommender import MovieRecommender
 
 
 def main() -> None:
@@ -20,16 +22,29 @@ def main() -> None:
     print("🎬 Welcome to the Movie Recommender System")
     print("=" * 80)
 
+    data_dir = Path(__file__).resolve().parents[1] / "data" / "raw"
+    movies_path = data_dir / "movies.csv"
+    ratings_path = data_dir / "ratings.csv"
+
+    if not movies_path.exists() or not ratings_path.exists():
+        print("\nThe MovieLens dataset is missing.")
+        choice = input("Download MovieLens Latest Small now? [y/N]: ").strip().lower()
+        if choice not in {"y", "yes"}:
+            print("\nPlease place movies.csv and ratings.csv in data/raw/ and run again.")
+            print("You can download the MovieLens dataset from:")
+            print("  https://grouplens.org/datasets/movielens/")
+            return
+
+        try:
+            ensure_movielens_data(data_dir)
+        except (OSError, ValueError, RuntimeError) as exc:
+            print(f"\n❌ Failed to prepare dataset: {exc}")
+            return
+
     try:
-        # Initialize the recommender
-        recommender = MovieRecommender('data/raw/movies.csv', 'data/raw/ratings.csv')
+        recommender = MovieRecommender(str(movies_path), str(ratings_path))
     except FileNotFoundError as e:
         print(f"\n❌ Error: {e}")
-        print("\nPlease ensure you have:")
-        print("  - data/raw/movies.csv")
-        print("  - data/raw/ratings.csv")
-        print("\nYou can download the MovieLens dataset from:")
-        print("  https://grouplens.org/datasets/movielens/")
         return
     except ValueError as e:
         print(f"\n❌ Error: {e}")
@@ -168,22 +183,3 @@ def get_movie_info(recommender: MovieRecommender) -> None:
 
 if __name__ == "__main__":
     main()
-
-    print("Movie Recommender ready.")
-    print("Type a movie title exactly as it appears in the dataset, or press Enter to exit.\n")
-
-    while True:
-        movie_title = input("Enter a movie title: ").strip()
-        if not movie_title:
-            print("Exiting movie recommender.")
-            break
-
-        try:
-            recommendations = recommender.recommend_movies(movie_title, top_n=10)
-            print(f"\nTop recommendations for '{movie_title}':")
-            print(format_recommendations(recommendations))
-            print()
-        except ValueError as exc:
-            print(f"\n{exc}\n")
-        except RuntimeError as exc:
-            print(f"\nError: {exc}\n")
